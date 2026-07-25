@@ -2,6 +2,7 @@
 
 import React, { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import * as XLSX from 'xlsx';
 
 type Direction = 'inbound' | 'outbound';
 
@@ -148,6 +149,43 @@ function YesNo({
 }
 
 function InBondFormContent() {
+  function findValueNear(rows: any[][], label: string): string {
+  const target = label.toLowerCase();
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const idx = row.findIndex(
+      (c) => typeof c === 'string' && c.trim().toLowerCase().startsWith(target)
+    );
+    if (idx === -1) continue;
+    for (let c = idx + 1; c < row.length; c++) {
+      const v = row[c];
+      if (v !== undefined && v !== null && String(v).trim() !== '') {
+        return String(v).trim();
+      }
+    }
+    const below = rows[r + 1]?.[idx];
+    if (below !== undefined && below !== null && String(below).trim() !== '') {
+      return String(below).trim();
+    }
+  }
+  return '';
+}
+
+function parseInBondExcel(rows: any[][]): Partial<FormState> {
+  return {
+    c209_number: findValueNear(rows, 'C209 Number'),
+    bar_number: findValueNear(rows, 'Bar Number'),
+    pieces: findValueNear(rows, 'Number of Pieces'),
+    date_received: findValueNear(rows, 'Date Received').slice(0, 10),
+    section1_comments: findValueNear(rows, 'Comments'),
+    section1_print_name: findValueNear(rows, 'PRINT NAME'),
+    section1_sign_name: findValueNear(rows, 'SIGN NAME'),
+    manager_name: findValueNear(rows, 'Name of MANAGER'),
+    reseal_seal_numbers: findValueNear(rows, 'SEAL NUMBERS'),
+    reseal_from: findValueNear(rows, 'FROM'),
+    reseal_to: findValueNear(rows, 'TO'),
+  };
+}
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -187,6 +225,21 @@ function InBondFormContent() {
         gift_cart_equipment_wheels_brakes: form.gift_cart_equipment_wheels_brakes === 'YES',
         dispatch_recorded: form.dispatch_recorded === 'YES',
       };
+      function handleExcelImport(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    const parsed = parseInBondExcel(rows);
+    setForm((prev) => ({ ...prev, ...parsed }));
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+}
       const res = await fetch('/api/in-bond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,9 +286,21 @@ function InBondFormContent() {
             <>
               <button className="ib-btn-secondary" onClick={() => setMode('form')}>Back to Edit</button>
               <button className="ib-btn-primary" onClick={() => window.print()}>Print</button>
+              
             </>
           )}
           <button className="ib-btn-secondary" onClick={() => router.push('/in-bond/list')}>View Register</button>
+          {editable && (
+  abel className="ib-btn-secondary" style={{ cursor: 'pointer' }}>
+    Import z Excela
+    <input
+      type="file"
+      accept=".xlsx,.xls"
+      style={{ display: 'none' }}
+      onChange={handleExcelImport}
+    />
+  </label>
+)}
         </div>
       </div>
 

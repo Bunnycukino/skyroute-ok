@@ -111,3 +111,67 @@ CREATE INDEX IF NOT EXISTS idx_realloc_c208
 
 CREATE INDEX IF NOT EXISTS idx_realloc_c209
   ON public.reallocation_register (c209_number);
+
+
+-- ============================================================
+-- In Bond Control Sheet (mirrors dnata IN BOND CONTROL SHEET.pdf)
+-- Supports both INBOUND and OUTBOUND bar/container registration
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.in_bond_sheets (
+  id BIGSERIAL PRIMARY KEY,
+  direction TEXT NOT NULL DEFAULT 'inbound' CHECK (direction IN ('inbound', 'outbound')),
+  c209_number TEXT,
+  bar_number TEXT,
+  pieces INTEGER,
+  flight_number TEXT,
+  container_code TEXT,
+  date_received DATE,
+  lock_seal_check BOOLEAN,
+  c209_present BOOLEAN,
+  recorded_on_despatch_sheet BOOLEAN,
+  section1_comments TEXT,
+  section1_print_name TEXT,
+  section1_sign_name TEXT,
+  section2_comments TEXT,
+  core_bar_locks_checked_prior BOOLEAN,
+  core_bar_locks_intact BOOLEAN,
+  core_bar_seal_match BOOLEAN,
+  core_bar_print_name TEXT,
+  core_bar_sign_name TEXT,
+  gift_cart_locks_checked_prior BOOLEAN,
+  gift_cart_locks_intact BOOLEAN,
+  gift_cart_seal_match BOOLEAN,
+  gift_cart_print_name TEXT,
+  gift_cart_sign_name TEXT,
+  section3_comments TEXT,
+  manager_informed BOOLEAN,
+  manager_name TEXT,
+  reseal_seal_numbers TEXT,
+  reseal_from TEXT,
+  reseal_to TEXT,
+  core_bar_equipment_doors_locks BOOLEAN,
+  core_bar_equipment_wheels_brakes BOOLEAN,
+  core_bar_completion_comments TEXT,
+  core_bar_completion_print_name TEXT,
+  core_bar_completion_sign_name TEXT,
+  gift_cart_equipment_doors_locks BOOLEAN,
+  gift_cart_equipment_wheels_brakes BOOLEAN,
+  gift_cart_completion_comments TEXT,
+  gift_cart_completion_print_name TEXT,
+  gift_cart_completion_sign_name TEXT,
+  dispatch_date DATE,
+  dispatch_time TEXT,
+  dispatch_recorded BOOLEAN,
+  dispatch_print_name TEXT,
+  dispatch_sign_name TEXT,
+  notes TEXT,
+  created_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_in_bond_sheets_direction ON public.in_bond_sheets (direction);
+CREATE INDEX IF NOT EXISTS idx_in_bond_sheets_c209 ON public.in_bond_sheets (c209_number);
+CREATE INDEX IF NOT EXISTS idx_in_bond_sheets_bar_number ON public.in_bond_sheets (bar_number);
+CREATE INDEX IF NOT EXISTS idx_in_bond_sheets_flight_number ON public.in_bond_sheets (flight_number);
+CREATE INDEX IF NOT EXISTS idx_in_bond_sheets_container_code ON public.in_bond_sheets (container_code);
+CREATE INDEX IF NOT EXISTS idx_in_bond_sheets_created_at ON public.in_bond_sheets (created_at DESC);
